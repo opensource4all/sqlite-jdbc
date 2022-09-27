@@ -101,7 +101,7 @@ How to add the SQLite Compressed and Encrypted Read-Only Database (CEROD) Extens
 ===================================================================================
 
 * Put cerod.c in the src/main/ext folder which already exists.
-* Add your Cerod key to the EXTENTION_ENV file as CEROD_EXT_KEY := <YourCerodKey>
+* Add your Cerod key to the EXTENTION_ENV file as CEROD_EXT_KEY := < YourCerodKey >
 
 Then follow directions for a normal build. 
 
