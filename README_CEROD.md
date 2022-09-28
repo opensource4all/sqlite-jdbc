@@ -15,7 +15,7 @@ How to add the SQLite Compressed and Encrypted Read-Only Database (CEROD) Extens
 
 * Put cerod.c in the src/main/ext folder which already exists in the sqlite-jdbc source code.
 * Add your Cerod key to the EXTENTION_ENV file as CEROD_EXT_KEY := < YourCerodKey >
-* NOTE: YourCerodKey is really your own key string (confusing, but true); but it is used in the java JNI and cerod.c, to make it really hard to use it hack unless you have a license. This is why if you use this sqlite-jdbc fork, it'll make your life easier to keep up with latest versions of sqlite-jdbc driver. 
+* NOTE: YourCerodKey is really your own key string (confusing, but true); but it is used in the java JNI and cerod.c, to make it really hard to hack your own cerod DB your distributing. This is why I think it is useful to have this sqlite-jdbc fork; it'll make your life easier to keep up with latest versions of sqlite-jdbc driver. 
 
 Then follow directions for a normal build as described in [building SQLITE-JDBC driver from scratch (CONTRIBUTING.md)](CONTRIBUTING.md)
 
