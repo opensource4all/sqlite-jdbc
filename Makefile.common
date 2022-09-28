@@ -10,18 +10,23 @@ JAVAC := "$$JAVA_HOME/bin/javac"
 JAVAH := "$$JAVA_HOME/bin/javah"
 # set environment when cerod.c extention is available in source tree
 CEROD_SRC=./src/main/ext/cerod.c
-# TODO: the following check no longer working on MacOS.
-# todo: for now, I'm assuming your have a cerod.c (licensed required) per CEROD_SRC
+ifneq ("$(wildcard $(PATH_TO_FILE))","")
+    FILE_EXISTS = 1
+else
+    FILE_EXISTS = 0
+endif
+
 #ifeq ($(shell test -e $(CEROD_SRC) && echo -n true),true)
+ifneq ("$(wildcard $(CEROD_SRC))","")
      CEROD_EXT = -DSQLITE_ENABLE_CEROD_TINFL -DSQLITE_ENABLE_CEROD=2
      ifndef CEROD_EXT_KEY
      	$(error CEROD_EXT_KEY is undefined.  create EXTENTION_ENV file with the CEROD_EXT_KEY=<YourLicenseKey> defined.)
      endif
      EXT_FLAGS := -DCEROD_EXT_KEY=$(CEROD_EXT_KEY)
-#else
-#     CEROD_EXT =
-#     EXT_FLAGS =
-#endif
+else
+     CEROD_EXT =
+     EXT_FLAGS =
+endif
 
 TARGET := target
 OSINFO_CLASS := org.sqlite.util.OSInfo
