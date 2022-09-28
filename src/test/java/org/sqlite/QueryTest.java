@@ -9,11 +9,9 @@
 // --------------------------------------
 package org.sqlite;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.data.Offset.offset;
 
 import java.sql.Clob;
 import java.sql.Connection;
@@ -36,14 +34,12 @@ public class QueryTest {
 
     @Test
     public void nullQuery() throws Exception {
-        Connection conn = getConnection();
-        Statement stmt = conn.createStatement();
-        try {
-            stmt.execute(null);
-        } catch (NullPointerException e) {
+        try (Connection conn = getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                assertThatExceptionOfType(NullPointerException.class)
+                        .isThrownBy(() -> stmt.execute(null));
+            }
         }
-        stmt.close();
-        conn.close();
     }
 
     @Test
@@ -79,9 +75,9 @@ public class QueryTest {
         PreparedStatement stmt = conn.prepareStatement("select * from sample where data > ?");
         stmt.setObject(1, 3.0f);
         ResultSet rs = stmt.executeQuery();
-        assertTrue(rs.next());
+        assertThat(rs.next()).isTrue();
         float f2 = rs.getFloat(1);
-        assertEquals(f, f2, 0.0000001);
+        assertThat(f2).isCloseTo(f, offset(0.0000001F));
     }
 
     @Test
@@ -98,10 +94,10 @@ public class QueryTest {
         conn.createStatement().execute("insert into sample values('" + date + "')");
 
         ResultSet rs = conn.createStatement().executeQuery("select * from sample");
-        assertTrue(rs.next());
-        assertEquals(now, rs.getDate(1));
-        assertTrue(rs.next());
-        assertEquals(now, rs.getDate(1));
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getDate(1)).isEqualTo(now);
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getDate(1)).isEqualTo(now);
 
         PreparedStatement stmt = conn.prepareStatement("insert into sample values(?)");
         stmt.setDate(1, new java.sql.Date(now.getTime()));
@@ -113,12 +109,8 @@ public class QueryTest {
         properties.setProperty(SQLiteConfig.Pragma.DATE_CLASS.pragmaName, "text");
         Connection conn = DriverManager.getConnection("jdbc:sqlite:", properties);
 
-        Statement statement = null;
-        try {
-            statement = conn.createStatement();
+        try (Statement statement = conn.createStatement()) {
             statement.execute("create table sample (date_time datetime)");
-        } finally {
-            if (statement != null) statement.close();
         }
 
         TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
@@ -134,29 +126,22 @@ public class QueryTest {
         java.sql.Date nowLikeCustomZoneIsUtc =
                 new java.sql.Date(utcFormat.parse(customFormat.format(now)).getTime());
 
-        PreparedStatement preparedStatement = null;
-        try {
-            preparedStatement = conn.prepareStatement("insert into sample (date_time) values(?)");
+        try (PreparedStatement preparedStatement =
+                conn.prepareStatement("insert into sample (date_time) values(?)")) {
             preparedStatement.setDate(1, now, customCalendar);
             preparedStatement.executeUpdate();
             preparedStatement.setDate(1, nowLikeCustomZoneIsUtc, utcCalendar);
             preparedStatement.executeUpdate();
-        } finally {
-            if (preparedStatement != null) preparedStatement.close();
         }
 
-        ResultSet resultSet = null;
-        try {
-            resultSet = conn.createStatement().executeQuery("select * from sample");
-            assertTrue(resultSet.next());
-            assertEquals(now, resultSet.getDate(1, customCalendar));
-            assertEquals(nowLikeCustomZoneIsUtc, resultSet.getDate(1, utcCalendar));
+        try (ResultSet resultSet = conn.createStatement().executeQuery("select * from sample")) {
+            assertThat(resultSet.next()).isTrue();
+            assertThat(resultSet.getDate(1, customCalendar)).isEqualTo(now);
+            assertThat(resultSet.getDate(1, utcCalendar)).isEqualTo(nowLikeCustomZoneIsUtc);
 
-            assertTrue(resultSet.next());
-            assertEquals(now, resultSet.getDate(1, customCalendar));
-            assertEquals(nowLikeCustomZoneIsUtc, resultSet.getDate(1, utcCalendar));
-        } finally {
-            if (resultSet != null) resultSet.close();
+            assertThat(resultSet.next()).isTrue();
+            assertThat(resultSet.getDate(1, customCalendar)).isEqualTo(now);
+            assertThat(resultSet.getDate(1, utcCalendar)).isEqualTo(nowLikeCustomZoneIsUtc);
         }
     }
 
@@ -169,9 +154,9 @@ public class QueryTest {
         conn.createStatement().execute("insert into sample values(zeroblob(5))");
 
         ResultSet rs = conn.createStatement().executeQuery("select * from sample");
-        assertTrue(rs.next());
-        assertEquals(5, rs.getBytes(1).length);
-        assertFalse(rs.wasNull());
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getBytes(1).length).isEqualTo(5);
+        assertThat(rs.wasNull()).isFalse();
     }
 
     @Test
@@ -183,9 +168,9 @@ public class QueryTest {
         conn.createStatement().execute("insert into sample values(zeroblob(0))");
 
         ResultSet rs = conn.createStatement().executeQuery("select * from sample");
-        assertTrue(rs.next());
-        assertEquals(0, rs.getBytes(1).length);
-        assertFalse(rs.wasNull());
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getBytes(1).length).isEqualTo(0);
+        assertThat(rs.wasNull()).isFalse();
     }
 
     @Test
@@ -197,9 +182,9 @@ public class QueryTest {
         conn.createStatement().execute("insert into sample values(null)");
 
         ResultSet rs = conn.createStatement().executeQuery("select * from sample");
-        assertTrue(rs.next());
-        assertNull(rs.getBytes(1));
-        assertTrue(rs.wasNull());
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getBytes(1)).isNull();
+        assertThat(rs.wasNull()).isTrue();
     }
 
     @Test
@@ -227,12 +212,9 @@ public class QueryTest {
     }
 
     @Test
-    public void concatTest() {
-
-        Connection conn = null;
-        try {
+    public void concatTest() throws SQLException {
+        try (Connection conn = getConnection()) {
             // create a database connection
-            conn = getConnection();
             Statement statement = conn.createStatement();
             statement.setQueryTimeout(30); // set timeout to 30 sec.
 
@@ -261,46 +243,32 @@ public class QueryTest {
                             "select group_concat(ifnull(shortname, name)) from mxp, person where mxp.mid=2 and mxp.pid=person.id and mxp.type='T'");
             while (rs.next()) {
                 // read the result set
-                assertEquals("Y,abc", rs.getString(1));
+                assertThat(rs.getString(1)).isEqualTo("Y,abc");
             }
             rs =
                     statement.executeQuery(
                             "select group_concat(ifnull(shortname, name)) from mxp, person where mxp.mid=1 and mxp.pid=person.id and mxp.type='T'");
             while (rs.next()) {
                 // read the result set
-                assertEquals("Y", rs.getString(1));
+                assertThat(rs.getString(1)).isEqualTo("Y");
             }
 
             PreparedStatement ps =
                     conn.prepareStatement(
                             "select group_concat(ifnull(shortname, name)) from mxp, person where mxp.mid=? and mxp.pid=person.id and mxp.type='T'");
             ps.clearParameters();
-            ps.setInt(1, new Integer(2));
+            ps.setInt(1, 2);
             rs = ps.executeQuery();
             while (rs.next()) {
                 // read the result set
-                assertEquals("Y,abc", rs.getString(1));
+                assertThat(rs.getString(1)).isEqualTo("Y,abc");
             }
             ps.clearParameters();
-            ps.setInt(1, new Integer(2));
+            ps.setInt(1, 2);
             rs = ps.executeQuery();
             while (rs.next()) {
                 // read the result set
-                assertEquals("Y,abc", rs.getString(1));
-            }
-
-        } catch (SQLException e) {
-            // if the error message is "out of memory",
-            // it probably means no database file is found
-            System.err.println(e.getMessage());
-        } finally {
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                // connection close failed.
-                System.err.println(e);
+                assertThat(rs.getString(1)).isEqualTo("Y,abc");
             }
         }
     }
@@ -308,39 +276,52 @@ public class QueryTest {
     @Test
     public void clobTest() throws SQLException {
         String content = "test_clob";
-        Connection conn = getConnection();
-        try {
-            PreparedStatement stmt = conn.prepareStatement("select cast(? as clob)");
-            try {
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement stmt = conn.prepareStatement("select cast(? as clob)")) {
                 stmt.setString(1, content);
-                ResultSet rs = stmt.executeQuery();
-                try {
-                    assertTrue(rs.next());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    assertThat(rs.next()).isTrue();
                     Clob clob = rs.getClob(1);
                     int length = (int) clob.length();
-                    try {
-                        clob.getSubString(0, length);
-                        fail("SQLException expected because position is less than 1");
-                    } catch (SQLException ignore) {
-                    }
-                    try {
-                        clob.getSubString(1, -1);
-                        fail("SQLException expected because length is less than 0");
-                    } catch (SQLException ignore) {
-                    }
-                    assertEquals("", clob.getSubString(1, 0));
-                    assertEquals(content, clob.getSubString(1, length));
-                    assertEquals(
-                            content.substring(2, content.length() - 1),
-                            clob.getSubString(3, content.length() - 3));
-                } finally {
-                    if (rs != null) rs.close();
+                    assertThatExceptionOfType(SQLException.class)
+                            .isThrownBy(() -> clob.getSubString(0, length));
+                    assertThatExceptionOfType(SQLException.class)
+                            .isThrownBy(() -> clob.getSubString(1, -1));
+                    assertThat(clob.getSubString(1, 0)).isEqualTo("");
+                    assertThat(clob.getSubString(1, length)).isEqualTo(content);
+                    assertThat(clob.getSubString(3, content.length() - 3))
+                            .isEqualTo(content.substring(2, content.length() - 1));
                 }
-            } finally {
-                if (stmt != null) stmt.close();
             }
-        } finally {
-            if (conn != null) conn.close();
         }
+    }
+
+    @Test
+    public void nullClobTest() throws SQLException {
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement stmt = conn.prepareStatement("select cast(? as clob)")) {
+                stmt.setString(1, null);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    assertThat(rs.next()).isTrue();
+                    Clob clob = rs.getClob(1);
+                    assertThat(clob).isNull();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void github720_Incorrect_Update_Count_After_Deleting_Many_Rows() throws Exception {
+        int size = 50000;
+        Connection conn = getConnection();
+        conn.createStatement().execute("drop table if exists test");
+        conn.createStatement().execute("create table test (id int not null)");
+        for (int i = 0; i < size; i++) {
+            conn.createStatement().execute("insert into test values(" + i + ")");
+        }
+        int deletedCount = conn.createStatement().executeUpdate("delete from test");
+        conn.close();
+
+        assertThat(deletedCount).isEqualTo(size);
     }
 }
