@@ -1,5 +1,6 @@
 SQLITE-JDBC CEROD fork 
 ========================================
+SQLite version used 3.39.3. This fork was updated with upstream as of 09/27/2022 
 
 Why ? 
 ====
