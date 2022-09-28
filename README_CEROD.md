@@ -4,6 +4,7 @@ Why ?
 ====
 I made the changes pretty generic for those wishing to use the sqlite-jdbc project with the Cerod extention; but since cerod.c is commercial license (meaning, not free), it was not possible to reliably integrate it into the main project and I cancel my merge request.  
 My plan is to keep this fork in sync with the upstream sqlite-jdbc. I will locally test it and keep the code up to date. 
+
 How ?
 ==== 
 I cannot provide a repository (e.g. like in maven repository) since that would require me to put the cerod.c into this source code repository and cerod.c is not free or opensource.    
