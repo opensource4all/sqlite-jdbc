@@ -4,7 +4,7 @@ SQLite version used 3.39.3. This fork was synched with the original (xerial/sqli
 
 Why ? 
 ====
-I wanted to run the sqlite-jdbc to access a sqlite3 DB that is compressed and encrypted with the CEROD extention (which is written in C.) I made the changes pretty generic for those wishing to use the xerial/sqlite-jdbc project with the CEROD extention; but since CEROD (cerod.c) is commercial license (meaning, not free), it was not possible to reliably integrate it into the main project xerial/sqlite-jdbc, so I canceled my merge request and decided to keep a fork and synch it with the upstream project from time to time.   
+I wanted to use the sqlite-jdbc project to access a sqlite3 DB that is compressed and encrypted with the CEROD extention (which is written in C.) I made the changes pretty generic for those wishing to use the xerial/sqlite-jdbc project with the CEROD extention; but since CEROD (cerod.c) is commercial license (meaning, not free), it was not possible to reliably integrate it into the main project xerial/sqlite-jdbc, so I canceled my merge request and decided to keep a fork and synch it with the upstream project from time to time.   
 
 
 How ?
@@ -18,7 +18,7 @@ How to add the SQLite Compressed and Encrypted Read-Only Database (CEROD) Extens
 
 * Place your licenced cerod.c in the src/main/ext folder. 
 * Add your Cerod key to the EXTENTION_ENV file as CEROD_EXT_KEY := < YourCerodKey >
-* NOTE: YourCerodKey is really your own made-up key string (confusing at first, at least for me, but true);  It is baked in the java JNI and cerod.c.  
+* NOTE: YourCerodKey is really your own made-up key string (confusing at first, at least for me, but true);  It is baked in the java JNI and cerod.c after everything is compiled here. 
 
 Then follow directions for a normal build as described in [building SQLITE-JDBC driver from scratch (CONTRIBUTING.md)](CONTRIBUTING.md)
 
@@ -35,9 +35,9 @@ TLDR version:
 7. unzip
 8. Docker (for cross-compilation only)
 
-Then
+Then: clone this project: 
 
-1. make native 2
+1. make native 
 2. mvn package 
 
 How to use CEROD encoded DB:
