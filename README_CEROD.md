@@ -1,11 +1,10 @@
 SQLITE-JDBC CEROD fork 
 ========================================
-SQLite version used 3.39.3. This fork was updated with upstream as of 09/27/2022 
+SQLite version used 3.39.3. This fork was synched with the original (xerial/sqlite-jdbc) upstream as of 09/27/2022 
 
 Why ? 
 ====
-I made the changes pretty generic for those wishing to use the sqlite-jdbc project with the Cerod extention; but since cerod.c is commercial license (meaning, not free), it was not possible to reliably integrate it into the main project and I cancel my merge request.  
-My plan is to keep this fork in sync with the upstream sqlite-jdbc. I will locally test it and keep the code up to date. 
+I wanted to run the sqlite-jdbc to access a sqlite3 DB that is compressed and encrypted with the CEROD extention (which is written in C.) I made the changes pretty generic for those wishing to use the xerial/sqlite-jdbc project with the CEROD extention; but since CEROD (cerod.c) is commercial license (meaning, not free), it was not possible to reliably integrate it into the main project xerial/sqlite-jdbc, so I canceled my merge request and decided to keep a fork and synch it with the upstream project from time to time.   
 
 
 How ?
