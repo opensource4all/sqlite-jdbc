@@ -37,8 +37,11 @@ TLDR version:
 
 Then: clone this project: 
 
-1. make native 
-2. mvn package 
+1. git clone https://github.com/opensource4all/sqlite-jdbc.git
+2. cd sqlite-jdbc
+3. make native 
+4. mvn package  <-- creates the jar
+5. mvn install  <-- if you use maven, this will package it and install it in your local maven repo. 
 
 How to use CEROD encoded DB:
 =====================================
