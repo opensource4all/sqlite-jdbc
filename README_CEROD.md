@@ -22,7 +22,7 @@ How to add the SQLite Compressed and Encrypted Read-Only Database (CEROD) Extens
 
 Then follow directions for a normal build as described in [building SQLITE-JDBC driver from scratch (CONTRIBUTING.md)](CONTRIBUTING.md)
 
-TLDR version:
+TL;DR version:
 ====
 ## Prerequisites
 
