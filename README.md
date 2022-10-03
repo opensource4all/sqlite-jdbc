@@ -1,5 +1,8 @@
 
-This is a fork to specifically support CEROD, a C Extention for SQLite3. 
+# SQLite JDBC Driver Fork with CEROD SQLite extention support
+
+This is a fork to specifically support CEROD, a C Extention for SQLite3.  
+SQLite JDBC Driver compatibility is 100% maintained to allow for effortless synch with the original upstream (SQLite JDBC Driver) project !!
 
 [Learn more about the SQLITE-JDBC CEROD Fork ](/README_CEROD.md)
 
