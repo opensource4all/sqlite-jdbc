@@ -53,7 +53,7 @@ public abstract class JDBC3ResultSet extends CoreResultSet {
 
     /** @see java.sql.ResultSet#next() */
     public boolean next() throws SQLException {
-        if (!open || emptyResultSet) {
+        if (!open || emptyResultSet || pastLastRow) {
             return false; // finished ResultSet
         }
         lastCol = -1;
@@ -73,7 +73,7 @@ public abstract class JDBC3ResultSet extends CoreResultSet {
         int statusCode = stmt.pointer.safeRunInt(DB::step);
         switch (statusCode) {
             case SQLITE_DONE:
-                close(); // aggressive closing to avoid writer starvation
+                pastLastRow = true;
                 return false;
             case SQLITE_ROW:
                 row++;
@@ -122,7 +122,7 @@ public abstract class JDBC3ResultSet extends CoreResultSet {
 
     /** @see java.sql.ResultSet#isAfterLast() */
     public boolean isAfterLast() {
-        return !open && !emptyResultSet;
+        return pastLastRow && !emptyResultSet;
     }
 
     /** @see java.sql.ResultSet#isBeforeFirst() */
@@ -154,29 +154,20 @@ public abstract class JDBC3ResultSet extends CoreResultSet {
 
     /** @see java.sql.ResultSet#getBigDecimal(int) */
     public BigDecimal getBigDecimal(int col) throws SQLException {
-        final int columnType = getColumnType(col);
-
-        if (columnType == Types.INTEGER) {
-            long decimal = getLong(col);
-            return BigDecimal.valueOf(decimal);
-        } else if (columnType == Types.FLOAT || columnType == Types.DOUBLE) {
-            final double decimal = getDouble(col);
-            if (Double.isNaN(decimal)) {
-                throw new SQLException("Bad value for type BigDecimal : Not a Number");
-            } else {
-                return BigDecimal.valueOf(decimal);
-            }
-        } else {
-            final String stringValue = getString(col);
-            if (stringValue == null) {
+        switch (safeGetColumnType(checkCol(col))) {
+            case SQLITE_NULL:
                 return null;
-            } else {
+            case SQLITE_FLOAT:
+                return BigDecimal.valueOf(safeGetDoubleCol(col));
+            case SQLITE_INTEGER:
+                return BigDecimal.valueOf(safeGetLongCol(col));
+            default:
+                final String stringValue = safeGetColumnText(col);
                 try {
                     return new BigDecimal(stringValue);
                 } catch (NumberFormatException e) {
                     throw new SQLException("Bad value for type BigDecimal : " + stringValue);
                 }
-            }
         }
     }
 
@@ -827,7 +818,7 @@ public abstract class JDBC3ResultSet extends CoreResultSet {
     /** @see java.sql.ResultSetMetaData#isNullable(int) */
     public int isNullable(int col) throws SQLException {
         checkMeta();
-        return meta[checkCol(col)][1]
+        return meta[checkCol(col)][0]
                 ? ResultSetMetaData.columnNoNulls
                 : ResultSetMetaData.columnNullable;
     }
@@ -971,7 +962,7 @@ public abstract class JDBC3ResultSet extends CoreResultSet {
         }
     }
 
-    private int safeGetColumnType(int col) throws SQLException {
+    protected int safeGetColumnType(int col) throws SQLException {
         return stmt.pointer.safeRunInt((db, ptr) -> db.column_type(ptr, col));
     }
 

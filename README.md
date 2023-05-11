@@ -9,13 +9,13 @@ SQLite JDBC Driver compatibility is 100% maintained to allow for effortless sync
 The rest is the original README from SQLite JDBC Driver...
 
 # SQLite JDBC Driver
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/xerial/sqlite-jdbc/CI/master)](https://github.com/xerial/sqlite-jdbc/actions/workflows/test.yml?query=branch%3Amaster)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/xerial/sqlite-jdbc/ci.yml?branch=master)](https://github.com/xerial/sqlite-jdbc/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Join the chat at https://gitter.im/xerial/sqlite-jdbc](https://badges.gitter.im/xerial/sqlite-jdbc.svg)](https://gitter.im/xerial/sqlite-jdbc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.xerial/sqlite-jdbc/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.xerial/sqlite-jdbc/)
 [![javadoc](https://javadoc.io/badge2/org.xerial/sqlite-jdbc/javadoc.svg)](https://javadoc.io/doc/org.xerial/sqlite-jdbc)
 [![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/org.xerial/sqlite-jdbc?color=blue&label=maven%20snapshot&server=https%3A%2F%2Foss.sonatype.org%2F)](https://oss.sonatype.org/content/repositories/snapshots/org/xerial/sqlite-jdbc/)
 
-SQLite JDBC is a library for accessing and creating [SQLite](http://sqlite.org) database files in Java.
+SQLite JDBC is a library for accessing and creating [SQLite](https://www.sqlite.org) database files in Java.
 
 Our SQLiteJDBC library requires no configuration since native libraries for major OSs, including Windows, macOS, Linux etc., are assembled into a single JAR (Java Archive) file.
 
@@ -23,7 +23,7 @@ Our SQLiteJDBC library requires no configuration since native libraries for majo
 
 :arrow_right: More usage examples and configuration are available in [USAGE.md](USAGE.md)
 
-SQLite JDBC is a library for accessing SQLite databases through the JDBC API. For the general usage of JDBC, see [JDBC Tutorial](http://docs.oracle.com/javase/tutorial/jdbc/index.html) or [Oracle JDBC Documentation](http://www.oracle.com/technetwork/java/javase/tech/index-jsp-136101.html).
+SQLite JDBC is a library for accessing SQLite databases through the JDBC API. For the general usage of JDBC, see [JDBC Tutorial](https://docs.oracle.com/javase/tutorial/jdbc/index.html) or [Oracle JDBC Documentation](https://www.oracle.com/technetwork/java/javase/tech/index-jsp-136101.html).
 
 1. [Download](#download) `sqlite-jdbc-(VERSION).jar`
 then append this jar file into your classpath.
@@ -101,7 +101,7 @@ id = 2
 
 # How does SQLiteJDBC work?
 Our SQLite JDBC driver package (i.e., `sqlite-jdbc-(VERSION).jar`) contains three
-types of native SQLite libraries (`sqlite-jdbc.dll`, `sqlite-jdbc.jnilib`, `sqlite-jdbc.so`),
+types of native SQLite libraries (`sqlitejdbc.dll`, `sqlitejdbc.jnilib`, `sqlitejdbc.so`),
 each of them is compiled for Windows, macOS and Linux. An appropriate native library
 file is automatically extracted into your OS's temporary folder, when your program
 loads `org.sqlite.JDBC` driver.
@@ -123,6 +123,41 @@ the following operating systems:
 In the other OSs not listed above, the pure-java SQLite is used. (Applies to versions before 3.7.15)
 
 If you want to use the native library for your OS, [build the source from scratch](./CONTRIBUTING.md).
+
+## GraalVM native-image support
+
+Sqlite JDBC supports [GraalVM native-image](https://www.graalvm.org/native-image/) out of the box starting from version 3.40.1.0.
+There has been rudimentary support for some versions before that, but this was not actively tested by the CI.
+
+By default, the `sqlitejdbc` library for the compilation target will be included in the native image, accompanied by the required JNI configuration.
+At runtime, this library will be extracted to the temp folder and loaded from there.
+For faster startup however, it is recommended to set the `org.sqlite.lib.exportPath` property at build-time.
+This will export the `sqlitejdbc` library at build-time to the specified directory, and the library will not be included as a resource.
+As a result, the native image itself will be slightly smaller and the overhead of exporting the library at run-time is eliminated,
+but you need to make sure the library can be found at run-time.
+The best way to do this is to simply place the library next to the executable.
+
+### CLI example
+```shell
+native-image -Dorg.sqlite.lib.exportPath=~/outDir -H:Path=~/outDir -cp foo.jar org.example.Main
+```
+This will place both the `sqlitejdbc` shared library and the native-image output in the `~/outDir` folder.
+
+### Maven example
+This example uses the [native-build-tools](https://graalvm.github.io/native-build-tools/latest/index.html) maven plugin:
+```xml
+<plugin>
+    <groupId>org.graalvm.buildtools</groupId>
+    <artifactId>native-maven-plugin</artifactId>
+    <configuration>
+        <buildArgs>
+            <buildArg>-Dorg.sqlite.lib.exportPath=${project.build.directory}</buildArg>
+        </buildArgs>
+    </configuration>
+</plugin>
+```
+This will automatically place the `sqlitejdbc` library in the `/target` folder of your project, creating a functional execution environment.
+When packaging the resulting app, simply include the library in the distribution bundle.
 
 # Download
 

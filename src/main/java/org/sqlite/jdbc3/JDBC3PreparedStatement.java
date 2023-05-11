@@ -10,6 +10,7 @@ import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.JDBCType;
 import java.sql.ParameterMetaData;
 import java.sql.Ref;
 import java.sql.ResultSet;
@@ -55,6 +56,7 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
                         resultsWaiting =
                                 conn.getDatabase().execute(JDBC3PreparedStatement.this, batch);
                         success = true;
+                        updateCount = getDatabase().changes();
                         return 0 != columnCount;
                     } finally {
                         if (!success && !pointer.isClosed()) pointer.safeRunConsume(DB::reset);
@@ -153,13 +155,29 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
     }
 
     /** @see java.sql.ParameterMetaData#getParameterTypeName(int) */
-    public String getParameterTypeName(int pos) {
-        return "VARCHAR";
+    public String getParameterTypeName(int pos) throws SQLException {
+        checkIndex(pos);
+        return JDBCType.valueOf(getParameterType(pos)).getName();
     }
 
     /** @see java.sql.ParameterMetaData#getParameterType(int) */
-    public int getParameterType(int pos) {
-        return Types.VARCHAR;
+    public int getParameterType(int pos) throws SQLException {
+        checkIndex(pos);
+        Object paramValue = batch[pos - 1];
+
+        if (paramValue == null) {
+            return Types.NULL;
+        } else if (paramValue instanceof Integer
+                || paramValue instanceof Short
+                || paramValue instanceof Boolean) {
+            return Types.INTEGER;
+        } else if (paramValue instanceof Long) {
+            return Types.BIGINT;
+        } else if (paramValue instanceof Double || paramValue instanceof Float) {
+            return Types.REAL;
+        } else {
+            return Types.VARCHAR;
+        }
     }
 
     /** @see java.sql.ParameterMetaData#getParameterMode(int) */

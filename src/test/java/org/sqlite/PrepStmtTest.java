@@ -1,8 +1,6 @@
 package org.sqlite;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.data.Offset.offset;
 
 import java.io.ByteArrayInputStream;
@@ -715,6 +713,90 @@ public class PrepStmtTest {
                                 assertThat(e.getResultCode())
                                         .isEqualTo(SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE);
                             });
+        }
+    }
+
+    @Test
+    public void getMoreResultsDoesNotCloseStatement() throws SQLException {
+        PreparedStatement ps = conn.prepareStatement("select ?");
+        ps.setString(1, "Hello");
+
+        ResultSet rs = ps.executeQuery();
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getString(1)).isEqualTo("Hello");
+        assertThat(rs.next()).isFalse();
+
+        assertThat(ps.getMoreResults()).isFalse();
+        assertThat(rs.isClosed()).isTrue();
+        assertThat(ps.isClosed()).isFalse();
+
+        assertThatNoException().isThrownBy(ps::clearParameters);
+    }
+
+    @Test
+    public void gh810_getMoreResults_and_getUpdateCount() throws SQLException {
+        stat.executeUpdate("create table t(i int)");
+
+        PreparedStatement ps = conn.prepareStatement("update t set i = 0 where false");
+        assertThat(ps.execute()).isFalse();
+        assertThat(ps.getUpdateCount()).isEqualTo(0);
+        assertThat(ps.getMoreResults()).isFalse();
+        assertThat(ps.getUpdateCount()).isEqualTo(-1);
+    }
+
+    @Test
+    public void executeUpdateCount() throws SQLException {
+        PreparedStatement ps1 = conn.prepareStatement("create table test (c1)");
+        assertThat(ps1.execute()).isFalse();
+
+        PreparedStatement ps2 = conn.prepareStatement("insert into test values('abc'),('def')");
+        assertThat(ps2.execute()).isFalse();
+        assertThat(ps2.getUpdateCount()).isEqualTo(2);
+        assertThat(ps2.getMoreResults()).isFalse();
+        assertThat(ps2.getUpdateCount()).isEqualTo(-1);
+
+        assertThat(ps1.getUpdateCount()).isEqualTo(0);
+        assertThat(ps1.getMoreResults()).isFalse();
+        assertThat(ps1.getUpdateCount()).isEqualTo(-1);
+    }
+
+    @Test
+    public void gh811_getMetadata_before_execution() throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("select 1")) {
+            ps.executeQuery();
+            ResultSetMetaData meta = ps.getMetaData();
+            assertThat(meta).isNotNull();
+            assertThat(meta.getColumnCount()).isEqualTo(1);
+            assertThat(meta.getColumnClassName(1)).isEqualTo("java.lang.Integer");
+        }
+
+        try (PreparedStatement ps = conn.prepareStatement("select 1")) {
+            ResultSetMetaData meta = ps.getMetaData();
+            assertThat(meta).isNotNull();
+            assertThat(meta.getColumnCount()).isEqualTo(1);
+            assertThat(meta.getColumnClassName(1)).isEqualTo("java.lang.Object");
+        }
+    }
+
+    @Test
+    public void getParameterTypeTest() throws SQLException {
+        stat.executeUpdate("create table t_int(i INT)");
+
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO t_int VALUES(?)")) {
+            ps.setLong(1, 100);
+            assertThat(ps.getParameterMetaData().getParameterType(1)).isEqualTo(Types.BIGINT);
+            assertThat(ps.getParameterMetaData().getParameterTypeName(1)).isEqualTo("BIGINT");
+        }
+
+        stat.executeUpdate("create table t_real(a REAL, b REAL)");
+
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO t_real VALUES(?, ?)")) {
+            ps.setDouble(1, 100.0);
+            ps.setFloat(2, 100.0f);
+            assertThat(ps.getParameterMetaData().getParameterType(1)).isEqualTo(Types.REAL);
+            assertThat(ps.getParameterMetaData().getParameterTypeName(1)).isEqualTo("REAL");
+            assertThat(ps.getParameterMetaData().getParameterType(2)).isEqualTo(Types.REAL);
+            assertThat(ps.getParameterMetaData().getParameterTypeName(2)).isEqualTo("REAL");
         }
     }
 }

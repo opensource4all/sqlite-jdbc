@@ -20,12 +20,14 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junitpioneer.jupiter.SetSystemProperty;
 
 @DisabledIfEnvironmentVariable(
         named = "SKIP_TEST_OSINFO",
         matches = "true",
         disabledReason = "Those tests would fail when ran on a musl based Linux")
+@DisabledInNativeImage
 public class OSInfoTest {
     private static final Logger logger = Logger.getLogger(OSInfoTest.class.getName());
 
@@ -110,15 +112,35 @@ public class OSInfoTest {
     // it's unlikely we run tests on an Android device
     @Test
     void testIsNotAndroid() {
+        assertThat(OSInfo.isAndroidRuntime()).isFalse();
+        assertThat(OSInfo.isAndroidTermux()).isFalse();
         assertThat(OSInfo.isAndroid()).isFalse();
+    }
+
+    @Test
+    public void testIsAndroidTermux() throws Exception {
+        try {
+            ProcessRunner mockRunner = mock(ProcessRunner.class);
+            OSInfo.processRunner = mockRunner;
+            when(mockRunner.runAndWaitFor("uname -o")).thenReturn("Android");
+
+            assertThat(OSInfo.isAndroidTermux()).isTrue();
+            assertThat(OSInfo.isAndroidRuntime()).isFalse();
+            assertThat(OSInfo.isAndroid()).isTrue();
+        } finally {
+            OSInfo.processRunner = new ProcessRunner();
+        }
     }
 
     @Nested
     @SetSystemProperty(key = "java.runtime.name", value = "Java for Android")
     @SetSystemProperty(key = "os.name", value = "Linux for Android")
-    class Android {
+    class AndroidRuntime {
+
         @Test
-        public void testIsAndroid() {
+        public void testIsAndroidRuntime() {
+            assertThat(OSInfo.isAndroidRuntime()).isTrue();
+            assertThat(OSInfo.isAndroidTermux()).isFalse();
             assertThat(OSInfo.isAndroid()).isTrue();
         }
 
@@ -151,5 +173,13 @@ public class OSInfoTest {
                 OSInfo.processRunner = new ProcessRunner();
             }
         }
+    }
+
+    @Test
+    @SetSystemProperty(key = "org.sqlite.osinfo.architecture", value = "overridden")
+    @SetSystemProperty(key = "os.name", value = "Windows")
+    void testOverride() {
+        assertThat(OSInfo.getArchName()).isEqualTo("overridden");
+        assertThat(OSInfo.getNativeLibFolderPathForCurrentOS()).isEqualTo("Windows/overridden");
     }
 }

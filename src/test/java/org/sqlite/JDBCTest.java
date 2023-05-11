@@ -12,13 +12,13 @@ package org.sqlite;
 import static org.assertj.core.api.Assertions.*;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class JDBCTest {
     @Test
@@ -91,7 +91,7 @@ public class JDBCTest {
             connection.setAutoCommit(false);
             // execute a statement
             try (Statement statement = connection.createStatement()) {
-                boolean success = statement.execute("SELECT * FROM sqlite_master");
+                boolean success = statement.execute("SELECT * FROM sqlite_schema");
                 assertThat(success).isTrue();
             }
             // try to assign read-only
@@ -109,7 +109,7 @@ public class JDBCTest {
             connection.setReadOnly(true);
             // execute a statement
             try (Statement statement = connection.createStatement()) {
-                boolean success = statement.execute("SELECT * FROM sqlite_master");
+                boolean success = statement.execute("SELECT * FROM sqlite_schema");
                 assertThat(success).isTrue();
             }
             connection.commit();
@@ -132,7 +132,7 @@ public class JDBCTest {
             // execute a statement
             try (Statement statement = connection.createStatement()) {
                 System.out.println("Executing query");
-                boolean success = statement.execute("SELECT * FROM sqlite_master");
+                boolean success = statement.execute("SELECT * FROM sqlite_schema");
                 assertThat(success).isTrue();
             } finally {
                 System.out.println("Closing statement");
@@ -146,7 +146,7 @@ public class JDBCTest {
             // execute a statement
             try (Statement statement2 = connection.createStatement()) {
                 System.out.println("Executing query 2");
-                boolean success = statement2.execute("SELECT * FROM sqlite_master");
+                boolean success = statement2.execute("SELECT * FROM sqlite_schema");
                 assertThat(success).isTrue();
             } finally {
                 System.out.println("Closing statement 2");
@@ -183,9 +183,9 @@ public class JDBCTest {
     void name() {}
 
     @Test
-    public void jdbcHammer() throws Exception {
+    public void jdbcHammer(@TempDir File tempDir) throws Exception {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
-        File tempFile = File.createTempFile("myTestDB", ".db");
+        File tempFile = File.createTempFile("myTestDB", ".db", tempDir);
         dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
@@ -271,7 +271,7 @@ public class JDBCTest {
     // helper methods -----------------------------------------------------------------
 
     private SQLiteDataSource createDatasourceWithExplicitReadonly() {
-        DriverManager.setLogWriter(new PrintWriter(System.out));
+        //        DriverManager.setLogWriter(new PrintWriter(System.out));
         SQLiteConfig config = new SQLiteConfig();
         config.setExplicitReadOnly(true);
         config.setBusyTimeout(10000);
