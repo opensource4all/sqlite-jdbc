@@ -1,16 +1,20 @@
 SQLITE-JDBC CEROD Fork 
 ========================================
-SQLite version used ![](VERSION)
-This fork was synched with the original (xerial/sqlite-jdbc) upstream as of 09/27/2022 
+SQLite version used 3.41.2 . 
+This fork was updated with the original (xerial/sqlite-jdbc) upstream as of 05/11/2023 
 
-Why ? 
+Why am I doing this? 
 ====
-I wanted to use the sqlite-jdbc project to access a sqlite3 DB that is compressed and encrypted with the CEROD extention (which is written in C.) I made the changes pretty generic for those wishing to use the xerial/sqlite-jdbc project with the CEROD extention; but since CEROD (cerod.c) is commercial license (meaning, not free), it was not possible to reliably integrate it into the main project xerial/sqlite-jdbc, so I canceled my merge request and decided to keep a fork and synch it with the upstream project from time to time.   
+I wanted to use the sqlite-jdbc project to access a sqlite3 DB that is compressed and encrypted with the CEROD extention (which is written in C.) I made the changes pretty generic and carefully so future merges could be done easily.
+However, since CEROD (cerod.c) is commercial license (meaning, not free) the merge request could not accepted by the xerial/sqlite-jdbc folks, understandingly so, since I could not provide them the cerod.c and 
+therefore they did not have a reliable way to test it; 
+
+I have decided to keep a fork and synchronize it at least once a year with the upstream project.   
 
 
 How ?
 ==== 
-I cannot provide a repository (e.g. like in maven repository) since that would require me to put the cerod.c into this source code repository and cerod.c is not free or opensource.    
+If you're a user of CEROD, you need to clone the source and build it yourself. 
 My intent is to make it super easy and save you a lot of time to make sqlite-jdbc work with your own licenced Cerod.c. 
 You can contact me for help or support at coolShark200@gmail.com if you have any questions.
 
@@ -36,12 +40,13 @@ TL;DR version:
 7. unzip
 8. Docker (for cross-compilation only)
 
-Then: clone this project: 
+Make sure you have your DOCKER DESKTOP running. <br>
+Then: clone this project:
 
 1. git clone https://github.com/opensource4all/sqlite-jdbc.git
 2. cd sqlite-jdbc
 3. make native 
-4. mvn package  <-- creates the jar
+4. mvn package  <-- creates the package (jar maven library)
 5. mvn install  <-- if you use maven, this will package it and install it in your local maven repo. 
 
 How to use CEROD encoded DB:
