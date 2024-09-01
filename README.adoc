@@ -14,7 +14,7 @@ SQLite JDBC Driver compatibility is 100% maintained to allow for effortless sync
 
 [Learn more about the SQLITE-JDBC CEROD Fork ](/README_CEROD.md)
 
-Follow directions for a normal build as described in [building SQLITE-JDBC driver from scratch (CONTRIBUTING.md)](CONTRIBUTING.md)
+Follow directions for CEROD build as described in [Preparing CEROD build (README_CEROD.md)](README_CEROD.md)
 
 The rest is the original README from SQLite JDBC Driver.
 
