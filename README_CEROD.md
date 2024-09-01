@@ -27,7 +27,7 @@ How to add the SQLite Compressed and Encrypted Read-Only Database (CEROD) Extens
 
 Then follow directions for a normal build as described in [building SQLITE-JDBC driver from scratch (CONTRIBUTING.md)](CONTRIBUTING.md)
 
-TL;DR version:
+my TL;DR version :
 ====
 ## Prerequisites
 
@@ -40,7 +40,7 @@ TL;DR version:
 7. unzip
 8. Docker (for cross-compilation only)
 
-Make sure you have your DOCKER DESKTOP running. <br>
+Make sure you have your DOCKER DESKTOP running, on Mac, go into applications and double click on the Docker icon <br> 
 Then: clone this project:
 
 1. git clone https://github.com/opensource4all/sqlite-jdbc.git
