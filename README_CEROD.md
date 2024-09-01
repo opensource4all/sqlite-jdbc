@@ -1,4 +1,4 @@
-mvnSQLITE-JDBC CEROD Fork 
+SQLITE-JDBC CEROD Fork 
 ========================================
 SQLite version used 3.41.2 . 
 This fork was updated with the original (xerial/sqlite-jdbc) upstream as of 05/11/2023 
