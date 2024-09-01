@@ -1,9 +1,13 @@
 package org.sqlite;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Date;
@@ -63,8 +67,13 @@ public class PrepStmtTest {
         assertThat(prep.executeUpdate()).isEqualTo(1);
         prep.setInt(1, 7);
         assertThat(prep.executeUpdate()).isEqualTo(1);
-        prep.close();
 
+        ResultSet rsgk = prep.getGeneratedKeys();
+        assertThat(rsgk.next()).isTrue();
+        assertThat(rsgk.getInt(1)).isEqualTo(3);
+        rsgk.close();
+
+        prep.close();
         // check results with normal statement
         ResultSet rs = stat.executeQuery("select sum(c1) from s1;");
         assertThat(rs.next()).isTrue();
@@ -307,7 +316,7 @@ public class PrepStmtTest {
     @Test
     public void tokens() throws SQLException {
         /* checks for a bug where a substring is read by the driver as the
-         * full original string, caused by my idiocyin assuming the
+         * full original string, caused by my idiocy in assuming the
          * pascal-style string was null terminated. Thanks Oliver Randschau. */
         StringTokenizer st = new StringTokenizer("one two three");
         st.nextToken();
@@ -798,5 +807,75 @@ public class PrepStmtTest {
             assertThat(ps.getParameterMetaData().getParameterType(2)).isEqualTo(Types.REAL);
             assertThat(ps.getParameterMetaData().getParameterTypeName(2)).isEqualTo("REAL");
         }
+    }
+
+    @Test
+    void getParameterTypeTest_when_no_parameter_set() throws SQLException {
+        stat.executeUpdate("create table t_int(i INT)");
+
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO t_int VALUES(?)")) {
+            assertThatThrownBy(() -> ps.getParameterMetaData().getParameterType(1))
+                    .isInstanceOf(SQLException.class)
+                    .hasMessage("No parameter has been set yet");
+            assertThatThrownBy(() -> ps.getParameterMetaData().getParameterTypeName(1))
+                    .isInstanceOf(SQLException.class)
+                    .hasMessage("No parameter has been set yet");
+        }
+    }
+
+    @Test
+    public void gh914_reuseExecute() throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT 1")) {
+            assertThat(ps.execute()).isTrue();
+            ResultSet rs = ps.getResultSet();
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.next()).isFalse();
+            assertThat(ps.getMoreResults()).isFalse();
+
+            ResultSet rs2 = ps.executeQuery();
+            assertThat(rs2).isNotNull();
+        }
+    }
+
+    @Test
+    public void gh1002_pi() throws SQLException {
+        BigDecimal pi = new BigDecimal("3.14");
+        stat.executeUpdate("create table gh1002(nr number(10,2))");
+
+        try (PreparedStatement ps = conn.prepareStatement("insert into gh1002 values (?)")) {
+            ps.setBigDecimal(1, pi);
+            ps.execute();
+        }
+
+        ResultSet rs = stat.executeQuery("select nr from gh1002");
+        assertThat(rs.getBigDecimal(1)).isEqualTo(pi);
+    }
+
+    @Test
+    public void gh1002_pi_real() throws SQLException {
+        BigDecimal pi = new BigDecimal("3.14");
+        stat.executeUpdate("create table gh1002(nr REAL)");
+
+        try (PreparedStatement ps = conn.prepareStatement("insert into gh1002 values (?)")) {
+            ps.setBigDecimal(1, pi);
+            ps.execute();
+        }
+
+        ResultSet rs = stat.executeQuery("select nr from gh1002");
+        assertThat(rs.getBigDecimal(1)).isEqualTo(pi);
+    }
+
+    @Test
+    public void gh1002_pi_text() throws SQLException {
+        BigDecimal pi = new BigDecimal("3.14");
+        stat.executeUpdate("create table gh1002(nr TEXT)");
+
+        try (PreparedStatement ps = conn.prepareStatement("insert into gh1002 values (?)")) {
+            ps.setBigDecimal(1, pi);
+            ps.execute();
+        }
+
+        ResultSet rs = stat.executeQuery("select nr from gh1002");
+        assertThat(rs.getBigDecimal(1)).isEqualTo(pi);
     }
 }

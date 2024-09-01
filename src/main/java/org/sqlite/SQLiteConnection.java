@@ -14,6 +14,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import org.sqlite.SQLiteConfig.TransactionMode;
 import org.sqlite.core.CoreDatabaseMetaData;
@@ -305,7 +306,7 @@ public abstract class SQLiteConnection implements Connection {
         }
 
         String tempFolder = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
-        String dbFileName = String.format("sqlite-jdbc-tmp-%d.db", resourceAddr.hashCode());
+        String dbFileName = String.format("sqlite-jdbc-tmp-%s.db", UUID.randomUUID());
         File dbFile = new File(tempFolder, dbFileName);
 
         if (dbFile.exists()) {
@@ -568,5 +569,28 @@ public abstract class SQLiteConnection implements Connection {
 
     protected String transactionPrefix() {
         return this.connectionConfig.transactionPrefix();
+    }
+
+    /**
+     * Returns a byte array representing the schema content. This method is intended for in-memory
+     * schemas. Serialized databases are limited to 2gb.
+     *
+     * @param schema The schema to serialize
+     * @return A byte[] holding the database content
+     */
+    public byte[] serialize(String schema) throws SQLException {
+        return db.serialize(schema);
+    }
+
+    /**
+     * Deserialize the schema using the given byte array. This method is intended for in-memory
+     * database. The call will replace the content of an existing schema. To make sure there is an
+     * existing schema, first execute ATTACH ':memory:' AS schema_name
+     *
+     * @param schema The schema to serialize
+     * @param buff The buffer to deserialize
+     */
+    public void deserialize(String schema, byte[] buff) throws SQLException {
+        db.deserialize(schema, buff);
     }
 }

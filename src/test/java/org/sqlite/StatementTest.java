@@ -305,23 +305,88 @@ public class StatementTest {
     public void getGeneratedKeys() throws SQLException {
         ResultSet rs;
         stat.executeUpdate("create table t1 (c1 integer primary key, v);");
+
+        // test standard insert operation
         stat.executeUpdate("insert into t1 (v) values ('red');");
         rs = stat.getGeneratedKeys();
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1);
         rs.close();
+
         stat.executeUpdate("insert into t1 (v) values ('blue');");
         rs = stat.getGeneratedKeys();
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(2);
         rs.close();
 
-        // closing one statement shouldn't close shared db metadata object.
+        // test INSERT ith special replace keyword. This will trigger a primary key conflict on the
+        // first
+        // inserted row ('red') and replace the record with a value of 'yellow' with the same
+        // primary
+        // key. The value returned from getGeneratedKeys should be primary key of the replaced
+        // record
+        stat.executeUpdate("replace into t1 (c1, v) values (1, 'yellow');");
+        rs = stat.getGeneratedKeys();
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getInt(1)).isEqualTo(1);
+        rs.close();
+
+        // test INSERT with common table expression
+        stat.executeUpdate(
+                "  WITH colors as (select 'green' as color) \n"
+                        + "INSERT into t1 (v) select color from colors;");
+        rs = stat.getGeneratedKeys();
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getInt(1)).isEqualTo(3);
+        rs.close();
+
         stat.close();
+
+        // generated keys are now attached to the statement. calling getGeneratedKeys
+        // on a statement that has not generated any should return an empty result set
         Statement stat2 = conn.createStatement();
+        stat.executeUpdate(
+                "with colors as (select 'insert' as color) update t1 set v = (select color from colors);");
         rs = stat2.getGeneratedKeys();
         assertThat(rs).isNotNull();
-        rs.close();
+        assertThat(rs.next()).isFalse();
+        stat2.close();
+    }
+
+    @Test
+    public void getGeneratedKeysIsStatementSpecific() throws SQLException {
+        /* this test ensures that the results of getGeneratedKeys are tied to
+          a specific statement. To verify this, we create two separate Statement
+          objects and then execute inserts on both. We then make getGeneratedKeys()
+          calls and verify that the two separate expected values are returned.
+
+          Note that the old implementation of getGeneratedKeys was called lazily, so
+          the result of both getGeneratedKeys calls would be the same value, the row ID
+          of the last insert on the connection. As a result it was unsafe to use
+          with multiple statements or in a multithreaded application.
+        */
+        stat.executeUpdate("create table t1 (c1 integer primary key, v);");
+
+        ResultSet rs1;
+        Statement stat1 = conn.createStatement();
+        ResultSet rs2;
+        Statement stat2 = conn.createStatement();
+
+        stat1.executeUpdate("insert into t1 (v) values ('red');");
+        stat2.executeUpdate("insert into t1 (v) values ('blue');");
+
+        rs2 = stat2.getGeneratedKeys();
+        rs1 = stat1.getGeneratedKeys();
+
+        assertThat(rs1.next()).isTrue();
+        assertThat(rs1.getInt(1)).isEqualTo(1);
+        rs1.close();
+
+        assertThat(rs2.next()).isTrue();
+        assertThat(rs2.getInt(1)).isEqualTo(2);
+        rs2.close();
+
+        stat1.close();
         stat2.close();
     }
 

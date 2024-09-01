@@ -29,20 +29,24 @@ else
 endif
 
 TARGET := target
+SRC:=src/main/java
 OSINFO_CLASS := org.sqlite.util.OSInfo
 OSINFO_PROG := lib/org/sqlite/util/OSInfo.class
+JAVA_CLASSPATH:=$(TARGET)/classpath/slf4j-api.jar
 
 ## building OSInfo.java
 ifeq ("$(wildcard $(OSINFO_PROG))","")
 $(info Building OSInfo tool)
-$(shell $(JAVAC) -cp src/main/java -d lib src/main/java/org/sqlite/util/OSInfo.java)
+$(shell mkdir -p $(TARGET)/classpath)
+$(shell curl -L -f -o$(JAVA_CLASSPATH) https://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar)
+$(shell $(JAVAC) -cp $(JAVA_CLASSPATH) -sourcepath $(SRC) -d lib src/main/java/org/sqlite/util/OSInfo.java)
 endif
 
 ifndef OS_NAME
-OS_NAME := $(shell $(JAVA) -cp lib $(OSINFO_CLASS) --os)
+OS_NAME := $(shell $(JAVA) -cp lib:$(JAVA_CLASSPATH) $(OSINFO_CLASS) --os)
 endif
 ifndef OS_ARCH
-OS_ARCH := $(shell $(JAVA) -cp lib $(OSINFO_CLASS) --arch)
+OS_ARCH := $(shell $(JAVA) -cp lib:$(JAVA_CLASSPATH) $(OSINFO_CLASS) --arch)
 endif
 
 # Windows uses different path separators
@@ -68,14 +72,14 @@ endif
 
 # os=Default is meant to be generic unix/linux
 
-known_targets := Linux-x86 Linux-x86_64 Linux-arm Linux-armv6 Linux-armv7 Linux-Android-arm Linux-Android-aarch64 Linux-Android-x86 Linux-Android-x86_64 Linux-ppc64 Mac-x86 Mac-x86_64 Mac-aarch64 DragonFly-x86_64 FreeBSD-x86 FreeBSD-x86_64 FreeBSD-aarch64 OpenBSD-x86_64 Windows-x86 Windows-x86_64 Windows-armv7 Windows-aarch64 SunOS-sparcv9 HPUX-ia64_32
+known_targets := Linux-x86 Linux-x86_64 Linux-arm Linux-armv6 Linux-armv7 Linux-Android-arm Linux-Android-aarch64 Linux-Android-x86 Linux-Android-x86_64 Linux-ppc64 Linux-riscv64 Mac-x86 Mac-x86_64 Mac-aarch64 DragonFly-x86_64 FreeBSD-x86 FreeBSD-x86_64 FreeBSD-aarch64 OpenBSD-x86_64 Windows-x86 Windows-x86_64 Windows-armv7 Windows-aarch64 SunOS-sparcv9 HPUX-ia64_32
 target := $(OS_NAME)-$(OS_ARCH)
 
 ifeq (,$(findstring $(strip $(target)),$(known_targets)))
   target := Default
 endif
 
-$(info Will build using target: $(target) (detected os: $(OS_NAME) arch: $(OS_ARCH)))
+$(info Will build using target: $(target) (detected os: $(OS_NAME), arch: $(OS_ARCH)))
 
 # cross-compilation toolchain prefix (e.g. "arm-linux-gnueabi-")
 CROSS_PREFIX :=
@@ -125,28 +129,28 @@ Linux-armv7_SQLITE_FLAGS  :=
 Linux-Android-arm_CC        := $(CROSS_PREFIX)clang
 Linux-Android-arm_STRIP     := $(CROSS_ROOT)/bin/llvm-strip
 Linux-Android-arm_CCFLAGS   := -I$(JAVA_HOME)/include -Ilib/inc_linux -I$(CROSS_ROOT)/sysroot/usr/include -Os -fPIC -fvisibility=hidden -fPIE -pie -lm -lc -landroid -ldl -llog
-Linux-Android-arm_LINKFLAGS := $(Default_LINKFLAGS)
+Linux-Android-arm_LINKFLAGS := $(Default_LINKFLAGS) -Wl,-soname,libsqlitejdbc.so
 Linux-Android-arm_LIBNAME   := libsqlitejdbc.so
 Linux-Android-arm_SQLITE_FLAGS  :=
 
 Linux-Android-aarch64_CC        := $(CROSS_PREFIX)clang
 Linux-Android-aarch64_STRIP     := $(CROSS_ROOT)/bin/llvm-strip
 Linux-Android-aarch64_CCFLAGS   := -I$(JAVA_HOME)/include -Ilib/inc_linux -I$(CROSS_ROOT)/sysroot/usr/include -Os -fPIC -fvisibility=hidden -fPIE -pie -lm -lc -landroid -ldl -llog
-Linux-Android-aarch64_LINKFLAGS := $(Default_LINKFLAGS)
+Linux-Android-aarch64_LINKFLAGS := $(Default_LINKFLAGS) -Wl,-soname,libsqlitejdbc.so
 Linux-Android-aarch64_LIBNAME   := libsqlitejdbc.so
 Linux-Android-aarch64_SQLITE_FLAGS  :=
 
 Linux-Android-x86_CC        := $(CROSS_PREFIX)clang
 Linux-Android-x86_STRIP     := $(CROSS_ROOT)/bin/llvm-strip
 Linux-Android-x86_CCFLAGS   := -I$(JAVA_HOME)/include -Ilib/inc_linux -I$(CROSS_ROOT)/sysroot/usr/include -Os -fPIC -fvisibility=hidden -fPIE -pie -lm -lc -landroid -ldl -llog
-Linux-Android-x86_LINKFLAGS := $(Default_LINKFLAGS)
+Linux-Android-x86_LINKFLAGS := $(Default_LINKFLAGS) -Wl,-soname,libsqlitejdbc.so
 Linux-Android-x86_LIBNAME   := libsqlitejdbc.so
 Linux-Android-x86_SQLITE_FLAGS  :=
 
 Linux-Android-x86_64_CC        := $(CROSS_PREFIX)clang
 Linux-Android-x86_64_STRIP     := $(CROSS_ROOT)/bin/llvm-strip
 Linux-Android-x86_64_CCFLAGS   := -I$(JAVA_HOME)/include -Ilib/inc_linux -I$(CROSS_ROOT)/sysroot/usr/include -Os -fPIC -fvisibility=hidden -fPIE -pie -lm -lc -landroid -ldl -llog
-Linux-Android-x86_64_LINKFLAGS := $(Default_LINKFLAGS)
+Linux-Android-x86_64_LINKFLAGS := $(Default_LINKFLAGS) -Wl,-soname,libsqlitejdbc.so
 Linux-Android-x86_64_LIBNAME   := libsqlitejdbc.so
 Linux-Android-x86_64_SQLITE_FLAGS  :=
 
@@ -156,6 +160,13 @@ Linux-ppc64_CCFLAGS   := -I$(JAVA_HOME)/include -Ilib/inc_linux -Os -fPIC -fvisi
 Linux-ppc64_LINKFLAGS := $(Default_LINKFLAGS)
 Linux-ppc64_LIBNAME   := libsqlitejdbc.so
 Linux-ppc64_SQLITE_FLAGS  :=
+
+Linux-riscv64_CC        := $(CROSS_PREFIX)gcc
+Linux-riscv64_STRIP     := $(CROSS_PREFIX)strip
+Linux-riscv64_CCFLAGS   := -I$(JAVA_HOME)/include -Ilib/inc_linux -Os -fPIC -fvisibility=hidden
+Linux-riscv64_LINKFLAGS := $(Default_LINKFLAGS)
+Linux-riscv64_LIBNAME   := libsqlitejdbc.so
+Linux-riscv64_SQLITE_FLAGS  :=
 
 DragonFly-x86_64_CC        := $(CROSS_PREFIX)cc
 DragonFly-x86_64_STRIP     := $(CROSS_PREFIX)strip
@@ -203,7 +214,7 @@ Mac-x86_CC        := gcc
 Mac-x86_STRIP     := strip -x
 Mac-x86_CCFLAGS    := -I$(JAVA_HOME)/include -Ilib/inc_mac -Os -fPIC -mmacosx-version-min=10.4 -fvisibility=hidden
 Mac-x86_LINKFLAGS := -dynamiclib
-Mac-x86_LIBNAME   := libsqlitejdbc.jnilib
+Mac-x86_LIBNAME   := libsqlitejdbc.dylib
 Mac-x86_SQLITE_FLAGS  := -DSQLITE_ENABLE_LOCKING_STYLE=0
 
 HPUX-ia64_32_CC			:= cc
@@ -221,7 +232,7 @@ ifeq ($(wildcard MAC_SDK),)
 endif
 Mac-x86_64_CCFLAGS    := -I$(MAC_SDK)/System/Library/Frameworks/JavaVM.framework/Headers -Ilib/inc_mac -Os -fPIC -mmacosx-version-min=10.6 -fvisibility=hidden -Wno-implicit-function-declaration
 Mac-x86_64_LINKFLAGS := -dynamiclib 
-Mac-x86_64_LIBNAME   := libsqlitejdbc.jnilib
+Mac-x86_64_LIBNAME   := libsqlitejdbc.dylib
 Mac-x86_64_SQLITE_FLAGS  := 
 
 # Use a CROSS_PREFIX as the cross-triple clang is not available in crossbuild, see https://github.com/multiarch/crossbuild/blob/ad79cc84b6fb3fb1d09bc4a78719ef26f23bab85/Dockerfile#L134
@@ -231,7 +242,7 @@ Mac-aarch64_STRIP     := $(CROSS_PREFIX)strip -x
 MAC_SDK := /usr/osxcross/SDK/MacOSX11.3.sdk
 Mac-aarch64_CCFLAGS    := -I$(MAC_SDK)/System/Library/Frameworks/JavaVM.framework/Headers -Ilib/inc_mac -Os -fPIC -mmacosx-version-min=10.9 -fvisibility=hidden -Wno-implicit-function-declaration
 Mac-aarch64_LINKFLAGS  := -dynamiclib
-Mac-aarch64_LIBNAME    := libsqlitejdbc.jnilib
+Mac-aarch64_LIBNAME    := libsqlitejdbc.dylib
 Mac-aarch64_SQLITE_FLAGS := 
 
 Windows-x86_CC           := $(CROSS_PREFIX)gcc

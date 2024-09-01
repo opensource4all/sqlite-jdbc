@@ -44,6 +44,7 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
         checkOpen();
         rs.close();
         pointer.safeRunConsume(DB::reset);
+        exhaustedResults = false;
 
         if (this.conn instanceof JDBC3Connection) {
             ((JDBC3Connection) this.conn).tryEnforceTransactionMode();
@@ -53,10 +54,13 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
                 () -> {
                     boolean success = false;
                     try {
-                        resultsWaiting =
-                                conn.getDatabase().execute(JDBC3PreparedStatement.this, batch);
-                        success = true;
-                        updateCount = getDatabase().changes();
+                        synchronized (conn) {
+                            resultsWaiting =
+                                    conn.getDatabase().execute(JDBC3PreparedStatement.this, batch);
+                            updateGeneratedKeys();
+                            success = true;
+                            updateCount = getDatabase().changes();
+                        }
                         return 0 != columnCount;
                     } finally {
                         if (!success && !pointer.isClosed()) pointer.safeRunConsume(DB::reset);
@@ -74,6 +78,7 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
 
         rs.close();
         pointer.safeRunConsume(DB::reset);
+        exhaustedResults = false;
 
         if (this.conn instanceof JDBC3Connection) {
             ((JDBC3Connection) this.conn).tryEnforceTransactionMode();
@@ -110,13 +115,22 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
 
         rs.close();
         pointer.safeRunConsume(DB::reset);
+        exhaustedResults = false;
 
         if (this.conn instanceof JDBC3Connection) {
             ((JDBC3Connection) this.conn).tryEnforceTransactionMode();
         }
 
         return this.withConnectionTimeout(
-                () -> conn.getDatabase().executeUpdate(JDBC3PreparedStatement.this, batch));
+                () -> {
+                    synchronized (conn) {
+                        long rc =
+                                conn.getDatabase()
+                                        .executeUpdate(JDBC3PreparedStatement.this, batch);
+                        updateGeneratedKeys();
+                        return rc;
+                    }
+                });
     }
 
     /** @see java.sql.PreparedStatement#addBatch() */

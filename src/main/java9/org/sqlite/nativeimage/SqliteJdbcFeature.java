@@ -10,6 +10,7 @@ import org.sqlite.core.NativeDB;
 import org.sqlite.jdbc3.JDBC3DatabaseMetaData;
 import org.sqlite.util.LibraryLoaderUtil;
 import org.sqlite.util.OSInfo;
+import org.sqlite.util.ProcessRunner;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +28,7 @@ public class SqliteJdbcFeature implements Feature {
         RuntimeClassInitialization.initializeAtBuildTime(SQLiteJDBCLoader.VersionHolder.class);
         RuntimeClassInitialization.initializeAtBuildTime(JDBC3DatabaseMetaData.class);
         RuntimeClassInitialization.initializeAtBuildTime(OSInfo.class);
+        RuntimeClassInitialization.initializeAtBuildTime(ProcessRunner.class);
         RuntimeClassInitialization.initializeAtBuildTime(LibraryLoaderUtil.class);
         a.registerReachabilityHandler(
                 this::nativeDbReachable, method(SQLiteJDBCLoader.class, "initialize"));
@@ -58,6 +60,7 @@ public class SqliteJdbcFeature implements Feature {
             // the user is responsible to make sure the created native-image can actually find it.
             Path targetPath = Paths.get(exportLocation, libraryName);
             try (InputStream in = SQLiteJDBCLoader.class.getResourceAsStream(libraryResource)) {
+                Files.createDirectories(targetPath.getParent());
                 Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new SqliteJdbcFeatureException(e);

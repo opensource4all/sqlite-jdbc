@@ -37,6 +37,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +48,12 @@ import java.util.jar.JarOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
+@DisabledIfEnvironmentVariable(
+        named = "SKIP_TEST_MULTIARCH",
+        matches = "true",
+        disabledReason = "Those tests would fail when ran on a multi-arch image")
 public class MultipleClassLoaderTest {
 
     private Connection connection = null;
@@ -86,10 +93,20 @@ public class MultipleClassLoaderTest {
         if (classesDir == null) {
             fail("Couldn't find classes under test.");
         }
+
+        // find the slf4j-api jar
+        String targetSlf4j = Paths.get("org", "slf4j", "slf4j-api").toString();
+        Optional<String> slf4jApi =
+                Arrays.stream(stringUrls).filter(s -> s.contains(targetSlf4j)).findFirst();
+        if (!slf4jApi.isPresent()) fail("Couldn't find slf4j-api");
+
         // Create a JAR file out the classes and resources
         File jarFile = File.createTempFile("jar-for-test-", ".jar");
         createJar(classesDir, classesDirPrefix, jarFile);
-        URL[] jarUrl = new URL[] {jarFile.toPath().toUri().toURL()};
+        URL[] jarUrl =
+                new URL[] {
+                    jarFile.toPath().toUri().toURL(), Paths.get(slf4jApi.get()).toUri().toURL()
+                };
 
         final AtomicInteger completedThreads = new AtomicInteger(0);
         ExecutorService pool = Executors.newFixedThreadPool(4);

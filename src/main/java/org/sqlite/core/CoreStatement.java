@@ -17,6 +17,8 @@ package org.sqlite.core;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.regex.Pattern;
 import org.sqlite.SQLiteConnection;
 import org.sqlite.SQLiteConnectionConfig;
 import org.sqlite.jdbc3.JDBC3Connection;
@@ -32,6 +34,16 @@ public abstract class CoreStatement implements Codes {
     protected int batchPos;
     protected Object[] batch = null;
     protected boolean resultsWaiting = false;
+
+    private Statement generatedKeysStat = null;
+    private ResultSet generatedKeysRs = null;
+
+    // pattern for matching insert statements of the general format starting with INSERT or REPLACE.
+    // CTEs used prior to the insert or replace keyword are also be permitted.
+    private static final Pattern INSERT_PATTERN =
+            Pattern.compile(
+                    "^\\s*(?:with\\s+.+\\(.+?\\))*\\s*(?:insert|replace)\\s*",
+                    Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 
     protected CoreStatement(SQLiteConnection c) {
         conn = c;
@@ -142,8 +154,55 @@ public abstract class CoreStatement implements Codes {
     public abstract ResultSet executeQuery(String sql, boolean closeStmt) throws SQLException;
 
     protected void checkIndex(int index) throws SQLException {
+        if (batch == null) {
+            throw new SQLException("No parameter has been set yet");
+        }
         if (index < 1 || index > batch.length) {
             throw new SQLException("Parameter index is invalid");
         }
+    }
+
+    protected void clearGeneratedKeys() throws SQLException {
+        if (generatedKeysRs != null && !generatedKeysRs.isClosed()) {
+            generatedKeysRs.close();
+        }
+        generatedKeysRs = null;
+        if (generatedKeysStat != null && !generatedKeysStat.isClosed()) {
+            generatedKeysStat.close();
+        }
+        generatedKeysStat = null;
+    }
+
+    /**
+     * SQLite's last_insert_rowid() function is DB-specific. However, in this implementation we
+     * ensure the Generated Key result set is statement-specific by executing the query immediately
+     * after an insert operation is performed. The caller is simply responsible for calling
+     * updateGeneratedKeys on the statement object right after execute in a synchronized(connection)
+     * block.
+     */
+    public void updateGeneratedKeys() throws SQLException {
+        clearGeneratedKeys();
+        if (sql != null && INSERT_PATTERN.matcher(sql).find()) {
+            generatedKeysStat = conn.createStatement();
+            generatedKeysRs = generatedKeysStat.executeQuery("SELECT last_insert_rowid();");
+        }
+    }
+
+    /**
+     * This implementation uses SQLite's last_insert_rowid function to obtain the row ID. It cannot
+     * provide multiple values when inserting multiple rows. Suggestion is to use a <a
+     * href=https://www.sqlite.org/lang_returning.html>RETURNING</a> clause instead.
+     *
+     * @see java.sql.Statement#getGeneratedKeys()
+     */
+    public ResultSet getGeneratedKeys() throws SQLException {
+        // getGeneratedKeys is required to return an EmptyResult set if the statement
+        // did not generate any keys. Thus, if the generateKeysResultSet is NULL, spin
+        // up a new result set without any contents by issuing a query with a false where condition
+        if (generatedKeysRs == null) {
+            generatedKeysStat = conn.createStatement();
+            generatedKeysRs = generatedKeysStat.executeQuery("SELECT 1 WHERE 1 = 2;");
+        }
+        return generatedKeysRs;
     }
 }
