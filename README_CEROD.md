@@ -1,7 +1,7 @@
 SQLITE-JDBC CEROD Fork 
 ========================================
-SQLite version used 3.41.2 . 
-This fork was updated with the original (xerial/sqlite-jdbc) upstream as of 05/11/2023 
+SQLite version used was updated as of 9/1/2024.
+This fork was updated with the original (xerial/sqlite-jdbc) upstream as of 09/01/2024. 
 
 Why am I doing this? 
 ====
