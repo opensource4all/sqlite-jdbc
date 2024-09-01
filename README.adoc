@@ -1,4 +1,3 @@
-= SQLite JDBC Driver
 :project-version: 3.46.1.0
 
 image:https://img.shields.io/github/actions/workflow/status/xerial/sqlite-jdbc/ci.yml?branch=master[GitHub Workflow Status (branch),link=https://github.com/xerial/sqlite-jdbc/actions/workflows/ci.yml?query=branch%3Amaster]
@@ -16,6 +15,8 @@ SQLite JDBC Driver compatibility is 100% maintained to allow for effortless sync
 [Learn more about the SQLITE-JDBC CEROD Fork ](/README_CEROD.md)
 
 The rest is the original README from SQLite JDBC Driver...
+
+= SQLite JDBC Driver
 
 SQLite JDBC is a library for accessing and creating https://www.sqlite.org[SQLite] database files in Java.
 
