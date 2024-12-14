@@ -1,3 +1,4 @@
+= SQLite JDBC Driver
 :project-version: 3.46.1.0
 
 image:https://img.shields.io/github/actions/workflow/status/xerial/sqlite-jdbc/ci.yml?branch=master[GitHub Workflow Status (branch),link=https://github.com/xerial/sqlite-jdbc/actions/workflows/ci.yml?query=branch%3Amaster]
@@ -7,7 +8,7 @@ image:https://javadoc.io/badge2/org.xerial/sqlite-jdbc/javadoc.svg[javadoc,link=
 image:https://img.shields.io/nexus/s/org.xerial/sqlite-jdbc?color=blue&label=maven%20snapshot&server=https%3A%2F%2Foss.sonatype.org%2F[Sonatype Nexus (Snapshots),link=https://oss.sonatype.org/content/repositories/snapshots/org/xerial/sqlite-jdbc/]
 
 
-= SQLite JDBC Driver Fork with CEROD SQLite extention support
+== SQLite JDBC Driver Fork with CEROD SQLite extention support
 
 This is a fork to specifically support CEROD, a C Extention for SQLite3.
 SQLite JDBC Driver compatibility is 100% maintained to allow for effortless synch with the original upstream (SQLite JDBC Driver) project !!
@@ -21,7 +22,7 @@ The rest is the original README from SQLite JDBC Driver.
 Note:
 updated 9/1/2024 as of sqlite-jdbc 3.46.1.1-SNAPSHOT
 
-= SQLite JDBC Driver
+== SQLite JDBC Driver
 
 SQLite JDBC is a library for accessing and creating https://www.sqlite.org[SQLite] database files in Java.
 
@@ -50,14 +51,14 @@ then append this jar file into your classpath.
 
 === Example usage
 
-Assuming `sqlite-jdbc-{project-version}.jar` and `slf4j-api-1.7.36.jar` are placed in the current directory.
+Assuming `sqlite-jdbc-{project-version}.jar` is placed in the current directory.
 
 [source,shell,subs="attributes+"]
 ----
 > javac Sample.java
-> java -classpath ".;sqlite-jdbc-{project-version}.jar;slf4j-api-1.7.36.jar" Sample   # in Windows
+> java -classpath ".;sqlite-jdbc-{project-version}.jar" Sample   # in Windows
 or
-> java -classpath ".:sqlite-jdbc-{project-version}.jar:slf4j-api-1.7.36.jar" Sample   # in macOS or Linux
+> java -classpath ".:sqlite-jdbc-{project-version}.jar" Sample   # in macOS or Linux
 name = leo
 id = 1
 name = yui
@@ -132,7 +133,7 @@ the following operating systems:
 |macOS | |✔ | | | |✔ | |
 |Linux (libc) |✔ |✔ |✔ |✔ |✔ |✔ |✔ |✔ 
 |Linux (musl) |✔ |✔ | | | |✔ | |
-|Android |✔ |✔ |✔ | | |✔ | |
+|Android (API Level 24+) |✔ |✔ |✔ | | |✔ | |
 |FreeBSD |✔ |✔ | | | |✔ | |
 |===
 
